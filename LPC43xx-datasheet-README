@@ -1,0 +1,82 @@
+Porting of FreeRTOS to a multicore system!
+
+- The platform used is LPC4337.
+- It has 2 cores, M0(Slave) and M4(Master).
+- FreeRTOS will be running individually on both the cores.
+- for M4 RTOS tick will be sysTick timer while for M0 Timer0 will be used
+  as RTOS tick.
+- Both the processors can communicate to each other with a 
+  interprocessor communication protocol.
+- The M4 processor is Harvard architecture based while M0 co-processor is 
+  von Neumann architecture baesd.
+- M4 NVIC has 53 interrupts while M0 NVIC has 32 interrupts.
+
+
+-- Interprocessor Communication protocol:
+
+- LPC4337 implements shared SRAM as the mailbox for communication between
+  them.
+- Interrupts based ACK system, with support of NVIC.
+
+
+--NVIC in LPC4337
+
+- Both M0 and M4 has seprate tightly caupled NVICs for minimal
+  interrupt latencies.
+- NVIC of M4--can control the system exceptions and peripheral interrupts.
+            --53 vectored interrupts.
+            --8 programmable interrupt priorities.
+            --relocatable vector table.
+            --NMI.
+            --Soft interrupt generation.
+
+- NVIC of M0--32 vectored interrupts.
+            --4 programmable interrupts priorities.
+
+- SysTick is implemented in M4 core which can be used to generate
+  SYSTICK exception at a 10ms intervel.
+  
+  
+---Specifications:
+
+--SRAM: 136 kB.
+--On-chip flash mem: 1MB dual banked flash memory.
+--EEPROM: 16kB devided into 128 pages.
+--Boot ROM: Supports 64kB.
+--OTP: 64 bits + 256 bits of OTP memory.
+--GPIOs: 8 GPIO ports with 31 GPIOs each.
+--SGPIOs: for serial stream processing.
+--Ethernet support.
+--1 UART.
+--3 USART.
+--SPI.
+--SSP.
+--I2C.
+--CAN.
+--A 32 bit timer/counter with 32 bit prescaler:
+                        -with 4 compare registers.
+                        -each firing an interrupt when match occurs.
+                        -2 32 bit capture channals for taking snapshot of the counter value, can also genrate interrupt.
+                        - Continuous-on match-interrupt.
+                        - Stop-on match-interrupt.
+                        - Reset-on match-interrupt.
+                        - set 0 on match.
+                        - set 1 on match.
+                        - toggle on match.
+                        - do nothing on match.
+                        - 2 match registers can be used to genrate timed DMA
+                          requests.
+                          
+                        - RI timer, for repeted interrupts genration(32-bit)
+                        - A windowed watchdog timer.
+                        
+-- Two 10 bit successive approximation ADC.
+
+-- Power management controller(PMC)-controls the power of cores, peripherals
+   and memories -Active mode.
+                -Sleep mode.
+                -Power down mode --Deep sleep mode.
+                                 --Power down mode
+                                 --Deep power down mode.
+                                 
+-- Code read protection(CRP) support.
