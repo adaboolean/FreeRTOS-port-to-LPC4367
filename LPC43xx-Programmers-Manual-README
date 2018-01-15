@@ -1,1 +1,64 @@
+Imlementation details of LPC43xx system!
 
+-- Dual cores, M0(Application processor/Host CPU) and M4(co-processor, for off-loading M4, or perform serial IO tasks)
+   (both 32-bit).
+-- Communication b/w them is performed using a shared SRAM mailbox and interrupts.
+-- 204MHz clock support.
+
+
+-- Interprocessor communication protocol:
+    
+    
+    M4(MASTER)---->----INTR------>------>M0(SLAVE)
+    ^                                    |
+    |------------<-----INTR------<-------|
+    
+    |    ptr        Host       ptr       |
+    -------->-------CMD----------<-------
+                    BUFFER
+    
+    |    ptr        Host                 |
+    -------->-------MSG----------<-------
+                    BUFFER
+                    
+                    
+-- can genrate interrupts from M0 to M4 and vice-versa using SendEvent
+   instruction (SEV), to raise the signal TXEV.
+-- TXEV is captured by CREG, and should be cleared by interrupt handler of that
+   core.
+
+   
+-- IPC protocol description:
+    -sync and async mode of communication.
+    -M4 initialize the M0.
+    -M4 can communicate M0 via command queues.
+    -message queues are located in M4's address space.
+    -M4 can be blocked to access the M0's subsystems.
+    
+-- IPC Queues:
+    -Queues are defined by: -queue start address.
+                            -queue stop address.
+                            -write ptr.
+                            -read ptr.
+    -Queue size is set to 3 words.
+    -Queue is cyclic in implementation.
+    
+    -There are two queues: -CMD queue.
+                           -MSG queue.
+    
+    -M4 writes to the CMD queue, write ptr is updated and interrupt is fired to
+     M0.
+    -M0 read the CMD queue and update the read ptr.
+    -M0 reply M4 by writing to the MSG queue and updating the write ptr,
+     and an interrupt is fired to M4.
+    -This cycle goes on until write ptr. == read ptr, this means either the queue
+     is empty or full.
+    -To avoid this ambiguity, this condition should never reach in our code.
+    
+    **For every write ptr updation, in any of the 2 queues, interrupt is fired to
+      the corresponding core!
+      
+-- IPC Protocol:
+    -M4 issues 32-bit command to the M0.
+    -CMD starts with 16-bit task id, this indicates which task msg refers to.
+    -
